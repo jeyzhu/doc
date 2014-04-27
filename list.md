@@ -351,6 +351,9 @@ class User_Touch_Public_ListSearchController extends User_Touch_Anjuke_AbstractA
     }
 }
 
+/*
+ * 调用 API 接口 获取 列表
+ */
 class User_Touch_Http_ListSearchService extends Apf_BaseService {
     private static $instance = null;
     private function __construct () {
