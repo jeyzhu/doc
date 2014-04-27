@@ -13,6 +13,7 @@
 ###To Do List
     1. LB修改
     2. 确认是否可放开所有 sh/sale 类型的URL
+    3. 零少结果SOJ
     
 ###列表页类型
     1. 搜索列表页
@@ -138,11 +139,9 @@
         1. component/user/touch/common/list/List.phtml
     
 
-###搜索零结果推荐 Ajax
+###搜索结果小于10条 搜索零结果推荐 Ajax + 新房推荐 Ajax
 
-###筛选零结果推荐 Ajax
-
-###新房推荐 Ajax    
+###筛选结果小于10条 筛选零结果推荐 Ajax 
 
 ###底部APP广告
 
@@ -154,9 +153,243 @@
     5. 搜索零结果推荐接口
     6. 筛选零结果推荐接口
     7. 新房推荐接口
+    8. 记录下一套信息接口
 ###Question
     1. 同首付房源功能如何做？PRD里面没有
+    2. 组合搜索时 类型该如何区分
+        * 搜索:参数 q
+        * 筛选:区域、板块+筛选参数
+        * 同小区:comm_id
+        * 同学区:school_id+school_name
+        * 附近:lat+lng
+    3. 零结果数据由谁来请求？前端 OR 后端
+    4. 零结果 SOJ 
+
 
 ###伪代码设计
     * 文件说明及位置
         1.controller controller/user/touch/anjuke/list/
+
+```php
+<?php
+/*
+ * 二手房列表控制器
+ */
+class User_Touch_Anjuke_List_ListController extends User_Touch_Public_ListSearchController {
+    public function __construct () {
+        parent :: __construct();
+    }
+    public function handleRequestInner() {
+        if (!$this -> is_ajax_request ()) {
+            //非 AJAX 请求 返回完整页面
+            $header = $this -> set_header ();
+            $this->request->set_attribute("topbar", $header[0]);
+            $this->request->set_attribute("navbar", $header[1]);
+            $this->request->set_attribute("wordbar", $header[2]);
+            $filter_list = $this -> get_filter_list (); //获取筛选参数列表
+        }
+        $this->request->set_attribute("list", $this -> list);
+        return "User_Touch_Anjuke_List_List";
+    }
+
+    /*
+     * 设置头部展示规则
+     */
+    private function set_header () {
+        $topbar = 1;
+        $navbar = 1;
+        $wordbar = 1;
+        switch ($this -> searchType) {
+        case 'txq':
+            //同小区
+            $topbar = 0;
+            $navbar = 0;
+            break;
+        case 'filter':
+            //筛选
+            $wordbar = 0;
+            break;
+        case 'search':
+            //搜索
+            $wordbar = 0;
+            break;
+        case 'txx':
+            //同学校
+            $navbar = 0;
+            break;
+        case 'fj':
+            //附近
+            $navbar = 0;
+            break;
+        }
+        return array($topbar, $navbar, $wordbar);
+    }
+
+    /*
+     * 判断是否 AJAX 请求
+     */
+    protected function is_ajax_request () {
+        if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+        {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    /**
+     * (non-PHPdoc)
+     * @see Apf_BaseController::initParams()
+     */
+    protected function initParams() {
+    }
+
+    /**
+     *  (non-PHPdoc)
+     * @see Apf_BaseController::checkParams()
+     */
+    protected function checkParams() {
+        return true;
+    }
+
+    /**
+     * (non-PHPdoc)
+     * @see Apf_BaseController::getInitObjectMap()
+     */
+    public function getInitObjectMap() {
+        return array(
+        );
+    }
+}
+
+/*
+ * 二手房列表搜索控制器
+ */
+class User_Touch_Public_ListSearchController extends User_Touch_Anjuke_AbstractAnjukeController  {
+    protected $params;
+    protected $list; //二手房列表
+    protected $searchType; //搜索类型 搜索、筛选、同小区、同学区、附近
+    public function __construct () {
+        parent :: __construct ();
+        if (!$this -> real_city ())
+            header('Location: http://m.anjuke.com/city/sale'); //跳转至对应城市地址
+        $this -> split_params ();
+        $this -> get_search_type ();
+        $this -> get_search_list ();
+    }
+
+    /*
+     * 拆分参数
+     * 将URL中的参数拆分
+     */
+    protected function split_params () {
+        $this -> params = $this->request->get_parameters();
+    }
+
+    /*
+     * 判断搜索类型
+     * 搜索:参数 q
+     * 筛选:区域、板块+筛选参数
+     * 同小区:comm_id
+     * 同学区:school_id+school_name
+     * 附近:lat+lng
+     */
+    protected function get_search_type () {
+        $this -> searchType = '';
+    }
+
+    /*
+     * 获取二手房列表
+     */
+    protected function get_search_list () {
+        $this -> set_search_params ();
+        $this -> list = User_Touch_Http_ListSearchService :: get_instance () -> get_search_list ();
+    }
+
+    /*
+     * 设置搜索参数 根据搜索类型过滤参数
+     */
+    protected function set_search_params () {
+        switch ($this -> searchType) {
+        }
+    }
+
+    public function handleRequestInner() {
+    }
+
+    /*
+     * 判断小区的所属城市 城市不对则跳转至对应的城市
+     */
+    protected function real_city () {
+        return true;
+    }
+
+    /**
+     * (non-PHPdoc)
+     * @see Apf_BaseController::initParams()
+     */
+    protected function initParams() {
+    }
+
+    /**
+     *  (non-PHPdoc)
+     * @see Apf_BaseController::checkParams()
+     */
+    protected function checkParams() {
+        return true;
+    }
+
+    /**
+     * (non-PHPdoc)
+     * @see Apf_BaseController::getInitObjectMap()
+     */
+    public function getInitObjectMap() {
+        return array(
+        );
+    }
+}
+
+class User_Touch_Http_ListSearchService extends Apf_BaseService {
+    private static $instance = null;
+    private function __construct () {
+        //禁止外部实例化
+    }
+    private function __clone () {
+        //禁止外部克隆
+    }
+
+    public static function get_instance () {
+        if (self :: $instance == null) {
+            self :: $instance = new self ();
+        }
+        return self :: $instance;
+    }
+
+    /*
+     * 获取搜索列表
+     */
+    public function get_search_list () {
+        $this -> checkParams ();
+        return array();
+    }
+
+    /*
+     * 验证过滤参数
+     */
+    private function checkParams () {
+        return 1;
+    }
+
+    /* (non-PHPdoc)
+     * @see Apf_BaseService::getInitObjectMap()
+     */
+    protected function getInitObjectMap() {
+        return array();
+    }
+
+}
+
+
+?>
+
+```
