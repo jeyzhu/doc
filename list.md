@@ -186,8 +186,10 @@ class User_Touch_Anjuke_List_ListController extends User_Touch_Public_ListSearch
             $this->request->set_attribute("topbar", $header[0]);
             $this->request->set_attribute("navbar", $header[1]);
             $this->request->set_attribute("wordbar", $header[2]);
-            $filter_list = $this -> get_filter_list (); //获取筛选参数列表
+            $filter_list = $this -> get_filter_list (); //获取筛选参数列表 API 接口
         }
+        //$this -> list 数据由父类获取的
+        $this -> record_next_info ($this -> list); //记录下一套信息 API 接口
         $this->request->set_attribute("list", $this -> list);
         return "User_Touch_Anjuke_List_List";
     }
@@ -391,5 +393,6 @@ class User_Touch_Http_ListSearchService extends Apf_BaseService {
 
 
 ?>
+
 
 ```
